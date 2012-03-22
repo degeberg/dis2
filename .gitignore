@@ -1,0 +1,6 @@
+*.aux
+*.temp
+*.log
+master.pdf
+*.make
+*.fls
