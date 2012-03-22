@@ -4,3 +4,5 @@
 master.pdf
 *.make
 *.fls
+*.out
+*.d
