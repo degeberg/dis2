@@ -12,12 +12,95 @@
 
 \usepackage{hyperref}
 
-\title{Dis2}
+\usepackage{clrscode3e}
+
+\title{Dis2: Diskret sandsynlighed}
 \author{Søren Dahlgaard \and Daniel Egeberg}
 
 \begin{document}
 
 \maketitle
+
+\noindent Et klassisk problem i datalogi er analysen af den
+randomiserede version af Quicksort-algoritmen angivet nedenfor.
+
+\begin{codebox}
+    \Procname{$\proc{Quicksort}(A,p,r)$}
+    \li \If $p < r$
+        \Then
+    \li     $q \gets \proc{Partition}(A,p,r)$
+    \li     $\proc{Quicksort}(A,p,q-1)$
+    \li     $\proc{Quicksort}(A,q+1,r)$
+        \End
+\end{codebox}
+\begin{codebox}
+    \Procname{$\proc{Partition}(A,p,r)$}
+    \li $i \gets \proc{Random}(p,r)$
+    \li $\proc{Swap}(A[r], A[i])$
+    \li $x \gets A[r]$
+    \li $i \gets p -1$
+    \li \For $j \gets p$ \To $r-1$
+        \Do
+    \li     \If $A[j] \leq x$
+            \Then
+    \li         $i \gets i + 1$
+    \li         $\proc{Swap}(A[i], A[j])$
+            \End
+        \End
+    \li $\proc{Swap}(A[i+1], A[r])$
+    \li \Return $i + 1$
+\end{codebox}
+
+Vi ønsker at finde det gennemsnitlige antal sammenligninger,
+der bliver udført og den dertil hørende varians ved hjælp af
+sandsynlighedsfrembringerfunktioner (pgf). Dette er et interresant
+problem da det er et velkendt faktum at Quicksorts køretid
+afhænger af dette.
+
+Hvis $X_n$ er den stokastiske variable for antallet af sammenligninger for input af længde $n$ ses det at $X_n$ opfylder rekurrensformelen
+\begin{equation}
+    X_n = n-1 + X_{k-1} + X_{n-k}
+\end{equation}
+hvor $k$ er indekset for det valgte pivotelement. Bemærk at $k$ også er en stokastisk variabel. Dette kan vi bruge til at lave en rekursiv formel for $\text{Pr}\{X_n = k\}$.
+
+Lad \[a(n,m) = \text{Pr}\{X_n=m\}.\] Da er sandsynligheden givet ved
+\begin{align}
+    \text{Pr}\{X_n = m\} &= \sum_{j=1}^n \text{Pr}\{\text{Pivot}=j\} \cdot \text{Pr}\{X_{j-1} + X_{n-j} = m-n+1 \} \\
+                         &= \sum_{j=1}^n \frac{1}{n} \left[ \sum_{h=0}^{m-n+1} a(j-1,h) \cdot a(n-j,m-n+1-h) \right]
+\end{align}
+og den tilhørende pgf ved
+\begin{align}
+    G_{X_n} &= \sum_k a(n,k)z^k \\
+               &= \sum_k \left( \sum_{j=1}^n \frac{1}{n} \left[ \sum_{h=0}^{m-n+1} a(j-1,h) \cdot a(n-j,m-n+1-h) \right] \cdot z^{k-n+1} \right) \cdot z^{n-1} \\
+ \label{bla}   &= \sum_k \left( \sum_{j=1}^n \frac{1}{n} \left( G_{X_{j-1}} \cdot G_{X_{n-j}} \right) \right) \cdot z^{n-1},
+\end{align}
+hvor \eqref{bla} følger af ligning~(8.37) fra bogen, da den inderste del blot er en foldning.
+
+Hvis vi vil finde middelværdien $\text{E}(X_n)$ skal vi blot udregne $G_{X_n}'(1)$. Til dette bruger vi produktreglen for differentiation og får den afledede funktion \begin{align}
+    G'_{X_n} &= \frac{1}{n}(n-1)z^{n-2} \sum_{j=1}^n G_{X_{j-1}} \cdot G_{X_{n-j}} \nonumber \\
+             &\quad + \frac{1}{n}z^{n-1} \sum_{j=1}^n G'_{X_{j-1}} \cdot G_{X_{n-j}} \nonumber \\
+\label{foo}  &\quad + \frac{1}{n}z^{n-1} \sum_{j=1}^n G_{X_{j-1}} \cdot G'_{X_{n-j}}.
+\end{align}
+
+Lad $M_n=G'_{X_n}(1)$. Vi sætter nu $z=1$ i \eqref{foo} og finder udtrykket \begin{align}
+    G'_{X_n}(z) &= \frac{1}{n}(n-1) \sum_{j=1}^n G_{X_{j-1}}(1) \cdot G_{X_{n-j}}(1) \nonumber \\
+             &\quad + \frac{1}{n} \sum_{j=1}^n G'_{X_{j-1}}(1) \cdot G_{X_{n-j}}(1) \nonumber \\
+             &\quad + \frac{1}{n} \sum_{j=1}^n G_{X_{j-1}}(1) \cdot G'_{X_{n-j}}(1),
+\end{align} og da $G_{X_i}(1)=1$ da det er en pgf, kan dette simplificeres til \begin{align}
+    M_n &= n-1+ \frac{1}{n} \sum_{j=1}^n (M_{j-1} + M_{n-j}) \\
+        &= n-1 + \frac{2}{n} \sum_{j=1}^{n-1} M_j \label{hej}
+\end{align} hvor \eqref{hej} gælder da $M_0=0$. Denne kan med samme fremgangsmåde som på side~28--29 i bogen udregnes til at være \begin{equation}
+    M_n = \text{E}(X_n) = 2(n+1)H_n - 4n
+\end{equation} hvor $H_n$ er det $n$'te harmoniske tal, hvilket passer med at den forventede køretid for randomiseret Quicksort er $\Theta(n \log n)$.
+
+Ved samme fremgangsmåde kan vi få variansen ved \begin{align}
+    G''_{X_n}(1) + G'_{X_n}(1) - (G'_{X_n}(1))^2,
+\end{align} men dette har vi undladt. Dette kræver at vi løser ligningen \begin{align}
+    G''_{X_n}(1) &= (n-1)(n-2)+\frac{2}{n}(n-1) \sum_{j-1}^n M_{j-1} \nonumber \\
+                 &\quad + \frac{2}{n}(n-1) \sum_{j=1}^n M_{j-1} \nonumber \\
+                 &\quad + \frac{1}{n} \sum_{j=1}^n \left( G_{X_{j-1}}''(1) + G''_{X_{n-j}}(1) \right) \nonumber \\
+                 &\quad + \frac{2}{n} \sum_{j=1}^n M_{j-1}M_{n-j}.
+\end{align}
 
 
 \end{document}
